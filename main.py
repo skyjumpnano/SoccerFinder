@@ -17,12 +17,11 @@
 # 2. Terminal.app > sudo nano /etc/hosts 로 superuser grant후 파일 수정
 # 3. DNS Cache refresh : Terminal.app > dscacheutil -flushcache
 
-import sys
-import os
-import requests
+import unicodedata
 
 from selenium import webdriver
 from bs4 import BeautifulSoup
+from wcwidth import wcswidth
 
 options = webdriver.ChromeOptions()
 options.add_argument('headless')
@@ -32,6 +31,27 @@ options.add_argument("disable-gpu")
 path = "./chromedriver"  # web driver install location
 driver = webdriver.Chrome(path, options=options)
 driver.implicitly_wait(3)  # seconds
+
+
+def fps(string, width, align='<', fill=' '):
+    count = (width - sum(1 + (unicodedata.east_asian_width(c) in "WF")
+                         for c in string))
+    """
+    # East_Asian_Width (ea)
+    ea ; A         ; Ambiguous
+    ea ; F         ; Fullwidth
+    ea ; H         ; Halfwidth
+    ea ; N         ; Neutral
+    ea ; Na        ; Narrow
+    ea ; W         ; Wide
+    """
+    return {
+        '>': lambda s: fill * count + s,
+        '<': lambda s: s + fill * count,
+        '^': lambda s: fill * (count / 2)
+                       + s
+                       + fill * (count / 2 + count % 2)
+    }[align](string)
 
 
 def pause():
@@ -65,16 +85,50 @@ def leagueload(team):
         game_plus_point = team.select('td > div > span')[6].text  # 득점
         game_minus_point = team.select('td > div > span')[7].text  # 실점
         game_plus_minus_point = team.select('td > div > span')[8].text  # 득실차
-    print(
-        num + "위 : " + name + " " + game_num + " " + game_point + " " + game_win + " " + game_draw + " " + game_lose + " " + game_plus_point + " " + game_minus_point + " " + game_plus_minus_point)
+    # print(
+    # num + "위 : " + name + " " + game_num + " " + game_point + " " + game_win + " " + game_draw +
+    # " " + game_lose + " " + game_plus_point + " " + game_minus_point + " " + game_plus_minus_point)
+    print('{0:>2}'.format(num) + u"위 : ", end='')  # 인덱스:>길이, 오른쪽으로 정렬 후 나머지 공백. 경기수
+    # print("%s" % (fps(name, 40)), end='')
+    # print(fps(name, 30), end='')
+    print('{:\u3000<20s}'.format(name), end='')
+    print('{0:>5}'.format(game_num) + " ", end='')
+    print('{0:>5}'.format(game_point) + " ", end='')
+    print('{0:>5}'.format(game_win) + " ", end='')
+    print('{0:>5}'.format(game_draw) + " ", end='')
+    print('{0:>5}'.format(game_lose) + " ", end='')
+    print('{0:>5}'.format(game_plus_point) + " ", end='')
+    print('{0:>5}'.format(game_minus_point) + " ", end='')
+    print('{0:>5}'.format(game_plus_minus_point))
 
 
 def leagueNameLoad(team):
     num = team.select('.num > div.inner > strong')[0].text
     name = team.select('.align_l > div.inner > span.name')[0].text
-    if (int(num) % 3) == 1: # 한 줄에 3개씩 출력하기 위함
+    if (int(num) % 3) == 1:  # 한 줄에 3개씩 출력하기 위함
         print('\n')
-    print(" [" + num + "] " + name, end='') # Python에서는 자동으로 개행하기에 개행을 방지하기 위하여 매개변수 삽입
+    leagueName = " [" + num + "] " + name
+    #print(" [" + num + "] " + name, end='')  # Python에서는 자동으로 개행하기에 개행을 방지하기 위하여 매개변수 삽입
+    print(fps(leagueName, 35), end='')
+
+
+def resultUpperPrint():
+    print("=" * 80)
+    """"
+    # 그냥 쓰자...
+    print(fps(" 순위", 7), end='')
+    print(fps("팀", 30), end='')
+    print(fps("경기수", 8), end='')
+    print(fps("승점", 8), end='')
+    print(fps("승", 5), end='')
+    print(fps("무", 5), end='')
+    print(fps("패", 5), end='')
+    print(fps("득점", 7), end='')
+    print(fps("실점", 7), end='')
+    print(fps("득실차", 9))
+    """  # 하다가 짜증나서 그냥 아래처럼 바꿈
+    print(" 순위   팀                           경기수  승점    승     무    패    득점   실점  득실차")
+    print("=" * 80)
 
 
 def fun1():
@@ -105,7 +159,7 @@ def fun1():
         leaguename = 'ligue1'
         fun1_year(leaguename)
     else:
-        print('{}는 없는 번호 입니다.\n'.format(menu_num))
+        print('{}는 없는 번호 입니다.\n'.format(fun1_menu_num))
         pause()
 
 
@@ -121,15 +175,24 @@ def fun1_year(leaguename):
         print('상위 메뉴로 이동합니다.')
         pause()
     else:
-        naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
-            int(2021 - league_search_year))
-        driver.get(naver_wfootball)
-        page = driver.page_source
-        premi_team_rank_list = BeautifulSoup(page, "html.parser")
-        team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
-        for team in team_rank_list:
-            leagueload(team)
-        print('검색을 마쳐서 홈 화면으로 이동합니다.\n')
+        try:
+            naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
+                int(2021 - league_search_year))
+            driver.get(naver_wfootball)
+            page = driver.page_source
+            premi_team_rank_list = BeautifulSoup(page, "html.parser")
+            team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
+            print('조회 완료: ' + str(int(2021 - league_search_year)) + '-' + str(
+                int(22 - league_search_year)) + ' 시즌의 리그 순위는 다음과 같습니다.')
+            resultUpperPrint()  # 폼 불러오기
+            for team in team_rank_list:
+                leagueload(team)
+            print("=" * 80)
+            print('검색을 마쳐서 홈 화면으로 이동합니다.\n')
+        except:
+            print('인터넷에 연결되지 않았거나 입력에 오류가 있습니다. 다시 한 번 확인해주세요.')
+            pause()
+
 
 def fun2():
     print('원하시는 리그를 선택하세요 \n')
@@ -164,7 +227,7 @@ def fun2():
         print('\n == 선택한 리그는 리그 1 입니다 ==')
         fun2_teamSearch(leaguename)
     else:
-        print('{}는 없는 번호 입니다.\n'.format(menu_num))
+        print('{}는 없는 번호 입니다.\n'.format(fun2_menu_num))
         pause()
 
 
@@ -180,26 +243,36 @@ def fun2_teamSearch(leaguename):
     if league_search_year == 0:
         print('상위 메뉴로 이동합니다.')
         pause()
-    else:
+    elif 1 <= league_search_year <= 9:
         # 팀 리스트 호출 시작
-        naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
-            int(2021 - league_search_year))
-        driver.get(naver_wfootball)
-        page = driver.page_source
-        premi_team_rank_list = BeautifulSoup(page, "html.parser")
-        team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
-        for team in team_rank_list:
-            leagueNameLoad(team)
-        # 여기까지 팀 리스트 호출
-        # 팀 선택 시작
-        print(' 원하는 팀을 선택해주세요.')
-        teamNumber = int(input('선택 : '))
-        for team in team_rank_list:
-            i += 1 # 기존 구성 활용하기 위해 증감연산 사용
-            if int(i) == int(teamNumber): # 구조는 같기에 숫자 넣은 것이 몇 번째일때 팀 결과 출력하게끔 처리
-                leagueload(team)
+        try:
+            naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
+                int(2021 - league_search_year))
+            driver.get(naver_wfootball)
+            page = driver.page_source
+            premi_team_rank_list = BeautifulSoup(page, "html.parser")
+            team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
+            for team in team_rank_list:
+                leagueNameLoad(team)
+            # 여기까지 팀 리스트 호출
+            # 팀 선택 시작
+            print('\n 원하는 팀을 선택해주세요.')
+            teamNumber = int(input(' 선택 : '))
+            print(' 선택한 결과는 다음과 같습니다.')
+            resultUpperPrint() # 폼 출력
+            for team in team_rank_list:
+                i += 1  # 기존 구성 활용하기 위해 증감연산 사용
+                if int(i) == int(teamNumber):  # 구조는 같기에 숫자 넣은 것이 몇 번째일때 팀 결과 출력하게끔 처리
+                    leagueload(team)
+            print("=" * 80)
+            pause()
+            # 출력 완료 후 팀 검색 종료
+        except:
+            print('인터넷에 연결되지 않았거나 입력에 오류가 있습니다. 다시 한 번 확인해주세요.')
+            pause()
+    else:
+        print('{}는 없는 번호 입니다.\n'.format(league_search_year))
         pause()
-        # 출력 완료 후 팀 검색 종료
 
 
 while True:
@@ -207,16 +280,18 @@ while True:
     print(' 1. 순위표 검색')
     print(' 2. 팀 검색\n')
     print(' 0. 프로그램 종료')
+    try:
+        menu_num = int(input('선택 : '))  # 사용자 입력을 받기 위한 int형 menu_num 선
+        if menu_num == 0 or menu_num == "0":
+            print('프로그램을 종료합니다. \n')
+            break
+        elif menu_num == 1:
+            fun1()
+        elif menu_num == 2:
+            fun2()
+        else:
+            print('{}는 없는 번호 입니다.\n'.format(menu_num), flush=False)
 
-    menu_num = int(input('선택 : '))  # 사용자 입력을 받기 위한 int형 menu_num 선
-
-    if menu_num == 0:
-        print('프로그램을 종료합니다. \n')
-        sys.exit()
-    elif menu_num == 1:
-        fun1()
-    elif menu_num == 2:
-        fun2()
-    else:
-        print('{}는 없는 번호 입니다.\n'.format(menu_num))
-        pause()
+    except:
+        print('알 수 없는 오류가 발생했습니다. 다시 실행합니다. \n')
+        menu_num = None
