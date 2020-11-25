@@ -108,28 +108,23 @@ def leagueNameLoad(team):
     if (int(num) % 3) == 1:  # 한 줄에 3개씩 출력하기 위함
         print('\n')
     leagueName = " [" + num + "] " + name
-    #print(" [" + num + "] " + name, end='')  # Python에서는 자동으로 개행하기에 개행을 방지하기 위하여 매개변수 삽입
     print(fps(leagueName, 35), end='')
 
 
-def resultUpperPrint():
-    print("=" * 80)
-    """"
-    # 그냥 쓰자...
-    print(fps(" 순위", 7), end='')
-    print(fps("팀", 30), end='')
-    print(fps("경기수", 8), end='')
-    print(fps("승점", 8), end='')
-    print(fps("승", 5), end='')
-    print(fps("무", 5), end='')
-    print(fps("패", 5), end='')
-    print(fps("득점", 7), end='')
-    print(fps("실점", 7), end='')
-    print(fps("득실차", 9))
-    """  # 하다가 짜증나서 그냥 아래처럼 바꿈
-    print(" 순위   팀                           경기수  승점    승     무    패    득점   실점  득실차")
-    print("=" * 80)
-
+def resultUpperPrint(a):
+    """
+    1 = 일반 순위표 검색
+    2 = 팀 연도 검색
+    3 = 팀 10개년 검색
+    """
+    if a == 1 or a == 2:
+        print("=" * 80)
+        print(" 순위   팀                           경기수  승점    승     무    패    득점   실점  득실차")
+        print("=" * 80)
+    elif a == 3:
+        print("=" * 90)
+        print("   연도    순위   팀                           경기수  승점    승     무    패    득점   실점  득실차")
+        print("=" * 90)
 
 def fun1():
     print('원하시는 리그를 선택하세요 \n')
@@ -184,7 +179,7 @@ def fun1_year(leaguename):
             team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
             print('조회 완료: ' + str(int(2021 - league_search_year)) + '-' + str(
                 int(22 - league_search_year)) + ' 시즌의 리그 순위는 다음과 같습니다.')
-            resultUpperPrint()  # 폼 불러오기
+            resultUpperPrint(1)  # 폼 불러오기
             for team in team_rank_list:
                 leagueload(team)
             print("=" * 80)
@@ -234,16 +229,18 @@ def fun2():
 def fun2_teamSearch(leaguename):
     i = 0
     print('원하시는 시즌을 선택하세요 \n')
-    print(' 1. 2020-21  ||  6. 2015-16 ')
-    print(' 2. 2019-20  ||  7. 2014-15 ')
-    print(' 3. 2018-19  ||  8. 2013-14 ')
-    print(' 4. 2017-18  ||  9. 2012-13 ')
-    print(' 5. 2016-17  ||  0. 상위로 이동 \n')
+    print(' 1. 2020-21  ||   6. 2015-16 ')
+    print(' 2. 2019-20  ||   7. 2014-15 ')
+    print(' 3. 2018-19  ||   8. 2013-14 ')
+    print(' 4. 2017-18  ||   9. 2012-13 ')
+    print(' 5. 2016-17  ||  10. 2011-12 ')
+    print('11. 2020-11  (상위 10개년 조회)')
+    print(' 0. 상위 메뉴로 이동\n')
     league_search_year = int(input('선택 : '))
     if league_search_year == 0:
         print('상위 메뉴로 이동합니다.')
         pause()
-    elif 1 <= league_search_year <= 9:
+    elif 1 <= league_search_year <= 10:
         # 팀 리스트 호출 시작
         try:
             naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
@@ -259,7 +256,7 @@ def fun2_teamSearch(leaguename):
             print('\n 원하는 팀을 선택해주세요.')
             teamNumber = int(input(' 선택 : '))
             print(' 선택한 결과는 다음과 같습니다.')
-            resultUpperPrint() # 폼 출력
+            resultUpperPrint(2)
             for team in team_rank_list:
                 i += 1  # 기존 구성 활용하기 위해 증감연산 사용
                 if int(i) == int(teamNumber):  # 구조는 같기에 숫자 넣은 것이 몇 번째일때 팀 결과 출력하게끔 처리
@@ -267,6 +264,46 @@ def fun2_teamSearch(leaguename):
             print("=" * 80)
             pause()
             # 출력 완료 후 팀 검색 종료
+        except:
+            print('인터넷에 연결되지 않았거나 입력에 오류가 있습니다. 다시 한 번 확인해주세요.')
+            pause()
+    elif league_search_year == 11:
+        try:
+            naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
+                int(2021 - league_search_year))
+            driver.get(naver_wfootball)
+            page = driver.page_source
+            premi_team_rank_list = BeautifulSoup(page, "html.parser")
+            team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
+            for team in team_rank_list:
+                leagueNameLoad(team)
+            # 여기까지 팀 리스트 호출
+            # 팀 선택 시작
+            print('\n 원하는 팀을 선택해주세요.')
+            teamNumber = int(input(' 선택 : '))
+            for team in team_rank_list:
+                i += 1  # 기존 구성 활용하기 위해 증감연산 사용
+                if int(i) == int(teamNumber):  # 구조는 같기에 숫자 넣은 것이 몇 번째일때 팀 불러오게
+                    league_search_name = team.select('.align_l > div.inner > span.name')[0].text # 순회하여 매칭된 팀의 이름을 기억
+            print(' 선택한 결과는 다음과 같습니다. [ {} ]'.format(league_search_name)) # 일단 팀을 출력
+            print(' 조회한 결과는 다음과 같습니다.')
+            resultUpperPrint(3)
+            j = 0
+            while j <= 10:
+                k = 0
+                naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
+                    int(2020 - j))
+                driver.get(naver_wfootball)
+                page = driver.page_source
+                premi_team_rank_list = BeautifulSoup(page, "html.parser")
+                team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
+                for team in team_rank_list:
+                    if team.select('.align_l > div.inner > span.name')[0].text == league_search_name:
+                        print('[ ' + str(int(2020 - j)) + ' ] ', end='')
+                        leagueload(team)
+                j += 1
+            print("=" * 90)
+            pause()
         except:
             print('인터넷에 연결되지 않았거나 입력에 오류가 있습니다. 다시 한 번 확인해주세요.')
             pause()
