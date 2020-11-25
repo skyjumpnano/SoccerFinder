@@ -69,6 +69,14 @@ def leagueload(team):
         num + "위 : " + name + " " + game_num + " " + game_point + " " + game_win + " " + game_draw + " " + game_lose + " " + game_plus_point + " " + game_minus_point + " " + game_plus_minus_point)
 
 
+def leagueNameLoad(team):
+    num = team.select('.num > div.inner > strong')[0].text
+    name = team.select('.align_l > div.inner > span.name')[0].text
+    if (int(num) % 3) == 1: # 한 줄에 3개씩 출력하기 위함
+        print('\n')
+    print(" [" + num + "] " + name, end='') # Python에서는 자동으로 개행하기에 개행을 방지하기 위하여 매개변수 삽입
+
+
 def fun1():
     print('원하시는 리그를 선택하세요 \n')
     print(' 1. 프리미어리그')
@@ -103,11 +111,11 @@ def fun1():
 
 def fun1_year(leaguename):
     print('원하시는 시즌을 선택하세요 \n')
-    print(' 1. 2020-21  ||  6. 2015-14 ')
-    print(' 2. 2019-18  ||  7. 2014-13 ')
-    print(' 3. 2018-17  ||  8. 2013-12 ')
-    print(' 4. 2017-16  ||  9. 2012-11 ')
-    print(' 5. 2016-15  ||  0. 상위로 이동 \n')
+    print(' 1. 2020-21  ||  6. 2015-16 ')
+    print(' 2. 2019-20  ||  7. 2014-15 ')
+    print(' 3. 2018-19  ||  8. 2013-14 ')
+    print(' 4. 2017-18  ||  9. 2012-13 ')
+    print(' 5. 2016-17  ||  0. 상위로 이동 \n')
     league_search_year = int(input('선택 : '))
     if league_search_year == 0:
         print('상위 메뉴로 이동합니다.')
@@ -124,8 +132,74 @@ def fun1_year(leaguename):
         print('검색을 마쳐서 홈 화면으로 이동합니다.\n')
 
 def fun2():
-    print('팀 검색 들어갈 곳 \n')
-    pause()
+    print('원하시는 리그를 선택하세요 \n')
+    print(' 1. 프리미어리그')
+    print(' 2. 라리가')
+    print(' 3. 분데스리가')
+    print(' 4. 세리에 A')
+    print(' 5. 리그 1')
+    print(' 0. 상위 메뉴로 이동\n')
+    fun2_menu_num = int(input('선택 : '))
+    if fun2_menu_num == 0:
+        print('상위 메뉴로 이동합니다.')
+        pause()
+    elif fun2_menu_num == 1:
+        leaguename = 'epl'
+        print('\n == 선택한 리그는 프리미어리그 입니다 ==')
+        fun2_teamSearch(leaguename)
+    elif fun2_menu_num == 2:
+        leaguename = 'primera'
+        print('\n == 선택한 리그는 라리가 입니다 ==')
+        fun2_teamSearch(leaguename)
+    elif fun2_menu_num == 3:
+        leaguename = 'bundesliga'
+        print('\n == 선택한 리그는 분데스리가 입니다 ==')
+        fun2_teamSearch(leaguename)
+    elif fun2_menu_num == 4:
+        leaguename = 'seria'
+        print('\n == 선택한 리그는 세리에 A 입니다 ==')
+        fun2_teamSearch(leaguename)
+    elif fun2_menu_num == 5:
+        leaguename = 'ligue1'
+        print('\n == 선택한 리그는 리그 1 입니다 ==')
+        fun2_teamSearch(leaguename)
+    else:
+        print('{}는 없는 번호 입니다.\n'.format(menu_num))
+        pause()
+
+
+def fun2_teamSearch(leaguename):
+    i = 0
+    print('원하시는 시즌을 선택하세요 \n')
+    print(' 1. 2020-21  ||  6. 2015-16 ')
+    print(' 2. 2019-20  ||  7. 2014-15 ')
+    print(' 3. 2018-19  ||  8. 2013-14 ')
+    print(' 4. 2017-18  ||  9. 2012-13 ')
+    print(' 5. 2016-17  ||  0. 상위로 이동 \n')
+    league_search_year = int(input('선택 : '))
+    if league_search_year == 0:
+        print('상위 메뉴로 이동합니다.')
+        pause()
+    else:
+        # 팀 리스트 호출 시작
+        naver_wfootball = "https://sports.news.naver.com/wfootball/record/index.nhn?category=" + leaguename + "&year=" + str(
+            int(2021 - league_search_year))
+        driver.get(naver_wfootball)
+        page = driver.page_source
+        premi_team_rank_list = BeautifulSoup(page, "html.parser")
+        team_rank_list = premi_team_rank_list.select('#wfootballTeamRecordBody>table>tbody>tr')
+        for team in team_rank_list:
+            leagueNameLoad(team)
+        # 여기까지 팀 리스트 호출
+        # 팀 선택 시작
+        print(' 원하는 팀을 선택해주세요.')
+        teamNumber = int(input('선택 : '))
+        for team in team_rank_list:
+            i += 1 # 기존 구성 활용하기 위해 증감연산 사용
+            if int(i) == int(teamNumber): # 구조는 같기에 숫자 넣은 것이 몇 번째일때 팀 결과 출력하게끔 처리
+                leagueload(team)
+        pause()
+        # 출력 완료 후 팀 검색 종료
 
 
 while True:
